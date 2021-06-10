@@ -109,4 +109,24 @@ for (x in 1:length(taxdata_lst)) {
 
 setdiff(species_count$species, taxdata$species) # we notice there are some extra rows returned by NCBI?
 final_taxdata <- merge(taxdata, species_count, by = "species")
-write_csv(select(final_taxdata, c(-obs)), "data/insects-taxdata-full.csv")
+#write_csv(select(final_taxdata, c(-obs)), "data/insects-taxdata-full.csv") # DON'T run this or you'll rewrite the manually added data
+missing_species <- setdiff(species_count$species, final_taxdata$species) # add the missing data manually
+
+#### Visualise Taxonomic Information ####
+library("ggrepel")
+taxo_data <- read_csv("data/insects-taxdata-full.csv")
+taxo_breakdown <- taxo_data %>% group_by(order, family) %>% summarise(n = n()) %>% as.data.frame()
+
+ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = reorder(family, -n))) +
+  geom_col(position = position_dodge2(width = .9)) +
+  labs(title = "Breakdown of Orders and Families of Insect Species in Sentosa",
+       subtitle = "Using iNaturalist data and observations from 2005 onwards") +
+  xlab("Order") + ylab("Occurrences") +
+  geom_text(aes(label = family),
+            position = position_dodge2(width = .9),
+            vjust = 0.25, hjust = -0.2,
+            angle = 90) +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "white", color = "white"),
+        panel.grid.major.y = element_line(color = "gray")
+  ylim(0, 32) 
