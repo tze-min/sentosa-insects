@@ -6,6 +6,7 @@ library("sf")
 library("ggplot2")
 library("purrr")
 library("ggtext")
+library("myTAI")
 
 setwd("C:/Users/TzeMin/Documents/sentosa-insects")
 
@@ -90,3 +91,22 @@ ggplot(topn_species, aes(x = obs, y = reorder(species, obs))) +
         axis.text.y = element_markdown(lineheight = 1.2)) 
 
 #### Retrieve Taxonomic Information ####
+#taxize::use_entrez() # log in to NCBI account and create ENTREZ API Key
+#usethis::edit_r_environ() # edit Renviron to add in ENTREZ_KEY if needed
+
+taxdata_lst <- lapply(as.character(species_count$species), function(x) taxonomy(organism = x , db = "ncbi", output = "classification"))
+taxdata = data.frame()
+
+for (x in 1:length(taxdata_lst)) {
+  tryCatch({
+    order <- filter(taxdata_lst[[x]], rank == "order")$name
+    family <- filter(taxdata_lst[[x]], rank == "family")$name
+    species <- filter(taxdata_lst[[x]], rank == "species")$name
+    row <- data.frame(cbind(order = order, family = family, species = species))
+    taxdata <- bind_rows(taxdata, row)
+  }, error = function(e) {cat("ERROR :", conditionMessage(e), "\n")})
+}
+
+setdiff(species_count$species, taxdata$species) # we notice there are some extra rows returned by NCBI?
+final_taxdata <- merge(taxdata, species_count, by = "species")
+write_csv(select(final_taxdata, c(-obs)), "data/insects-taxdata-full.csv")

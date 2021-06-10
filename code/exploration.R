@@ -1,3 +1,5 @@
+## Don't run this, haha
+
 library("readr")
 library("dplyr")
 library("tidyr")
@@ -216,7 +218,33 @@ gg <- gg + theme(axis.text.x  = my_axis(pics),
                  axis.text.y  = element_text(size=14),
                  axis.title.x = element_blank())
 
+######################### Incorporating Taxonomic Data ###########################
+library("taxize")
+library("myTAI")
 
+# help: https://cran.r-project.org/web/packages/myTAI/vignettes/Taxonomy.html
+
+taxonomy(organism = "Elymnias hypermnestra", db = "ncbi", output = "classification")
+
+outputlst <- apply(lst, 1, function(x) taxonomy( organism = x , db = "ncbi", output = "classification" ))
+
+# Parse out the taxonomy levels that you require
+taxdata = data.frame()
+
+for(x in 1:length(outputlst)){
+  tryCatch({
+    phylum=filter(outputlst[[x]], rank =="phylum")$name
+    class=filter(outputlst[[x]], rank =="class")$name
+    order=filter(outputlst[[x]], rank =="order")$name
+    family=filter(outputlst[[x]], rank =="family")$name
+    genus=filter(outputlst[[x]], rank =="genus")$name
+    species=filter(outputlst[[x]], rank =="species")$name
+    
+    row <- data.frame(cbind(phylum=phylum,class=class,order=order,family=family,genus=genus))
+    taxdata <- bind_rows(taxdata, row)    
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+write.csv(taxdata, file="taxdata-full.txt")
 
 ######################### TO DO #########################
 # Compile family and order per species
