@@ -35,7 +35,7 @@ species_count <-
 
 topn_species <-
   species_count %>%
-  top_n(5)
+  top_n(15)
 
 genus_count <-
   clean$genus %>%
@@ -51,14 +51,22 @@ ggplot(data = topn_species, aes(x = obs, y = reorder(species, obs))) +
   xlab("Occurrences") + ylab("Insect Species") +
   theme_minimal()
 
-# Download images if the names don't exist
-download_image <- function(species) {
-  filename <- paste0(species, ".jpg")
-  if (file.exists()) ################## Stopped here
+# Download images and their sources if the names don't exist
+download_species_image <- function(species_name, obs_data = clean, image_sources = "images/insects/image-sources.txt") {
+  filename <- paste0("images/insects/", species_name, ".jpg")
+  sink(image_sources, append = TRUE)
+
+  if (!file.exists(filename)) {
+    obs_of_species <- obs_data %>% filter(scientific_name_simple == species_name)
+    image <- obs_of_species$image_url[1] # use the image of the first obs
+    cat("Image of", obs_of_species$scientific_name_simple[1], "taken by", obs_of_species$user_login[1], "at", obs_of_species$url[1], "\n")
+    download.file(image, filename, mode = "wb")
+  }
+  sink()
 }
 
-y = "https://inaturalist-open-data.s3.amazonaws.com/photos/11218116/medium.jpeg?1508147718"
-download.file(y, paste0("images/insects/Elymnias hypermnestra", '.jpg'), mode = "wb")
+desired_species <- topn_species$species
+lapply(desired_species, download_species_image)
 
 # Inserting images
 labels <- c(
