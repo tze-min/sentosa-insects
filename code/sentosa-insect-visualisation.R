@@ -5,6 +5,7 @@ library("rgdal")
 library("sf")
 library("ggplot2")
 library("purrr")
+library("ggtext")
 
 setwd("C:/Users/TzeMin/Documents/sentosa-insects")
 
@@ -65,19 +66,26 @@ download_species_image <- function(species_name, obs_data = clean, image_sources
   sink()
 }
 
-desired_species <- topn_species$species
+desired_species <- topn_species$speciess
+unique_species <- unique(clean$scientific_name_simple)
 lapply(desired_species, download_species_image)
 
-# Inserting images
-labels <- c(
-  Interphase = "<img src='images/insects/interphase.jpg' width='60' /><br>Interphase",
-  Prophase = "<img src='images/insects/prophase.jpg' width='60' /><br>Prophase",
-  Metaphase = "<img src='images/insects/metaphase.jpg' width='60' /><br>Metaphase",
-  Anaphase = "<img src='images/insects/anaphase.jpg' width='60' /><br>Anaphase",
-  Telophase = "<img src='images/insects/telophase.jpg' width='60' /><br>Telophase"
-)
+# Inserting images to barplot
+n <- length(topn_species$species)
+labels <- character(n)
+for (i in 1:n) {
+  species_name <- as.character(topn_species$species[i])
+  labels[i] <- paste0("<img src='images/insects/", species_name, ".jpg' width='60' /><br>", species_name)
+}
+names(labels) <- as.character(topn_species$species)
+  
+ggplot(topn_species, aes(x = obs, y = reorder(species, obs))) +
+  geom_bar(position = "dodge", stat = "identity") + 
+  labs(title = "Top 15 Insect Species in Sentosa",
+       subtitle = "Using iNaturalist data and observations from 2005 onwards") +
+  xlab("Occurrences") + ylab("Insect Species") +
+  scale_y_discrete(name = NULL, labels = labels) +
+  theme(panel.background = element_rect(fill = "white", color = "white"),
+        panel.grid.major = element_line(color = "gray"),
+        axis.text.y = element_markdown(lineheight = 1.2)) 
 
-ggplot(data, aes(phase, value, fill = cat)) +
-  geom_col(position = "dodge") +
-  scale_x_discrete(name = NULL, labels = labels) +
-  theme(axis.text.x = element_markdown(lineheight = 1.2))
