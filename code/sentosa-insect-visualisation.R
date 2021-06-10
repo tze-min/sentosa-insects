@@ -117,8 +117,8 @@ library("ggrepel")
 taxo_data <- read_csv("data/insects-taxdata-full.csv")
 taxo_breakdown <- taxo_data %>% group_by(order, family) %>% summarise(n = n()) %>% as.data.frame()
 
-ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = reorder(family, -n))) +
-  geom_col(position = position_dodge2(width = .9)) +
+ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = family)) +
+  geom_col(position = position_dodge2(width = .9), fill = "black") +
   labs(title = "Breakdown of Orders and Families of Insect Species in Sentosa",
        subtitle = "Using iNaturalist data and observations from 2005 onwards") +
   xlab("Order") + ylab("Occurrences") +
@@ -128,5 +128,35 @@ ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = reorder(family,
             angle = 90) +
   theme(legend.position = "none",
         panel.background = element_rect(fill = "white", color = "white"),
-        panel.grid.major.y = element_line(color = "gray")
+        panel.grid.major.y = element_line(color = "gray")) +
   ylim(0, 32) 
+
+#### Heatmaps? Maps? Just bad vectors??? ####
+#remote::install_github("shaunkhoo/ltaer")
+library("ltaer") # https://shaunkhoo.github.io/ltaer/articles/ltaerviz.html
+library("ggmap")
+
+clean <- clean %>% rename("Longitude" = "longitude", "Latitude" = "latitude") # naming required by plotSGMap package
+full <- merge(clean, taxo_data, by.x = "scientific_name_simple", by.y = "species", all.x = TRUE)
+
+lepidoptera <- full %>% filter(order == "Lepidoptera")
+exploreSGMap(lepidoptera, colour = "red", size = 1.8, alpha = 0.5, popup = "scientific_name_simple") # note: sg_map: called from Google Maps API on 12 Dec 2018 7.30am
+
+odonata <- full %>% filter(order == "Odonata")
+exploreSGMap(odonata, colour = "blue", size = 1.8, alpha = 0.5, popup = "scientific_name_simple") # note: sg_map: called from Google Maps API on 12 Dec 2018 7.30am
+
+# The below uses sg_map, but the zoom is at 1, can't change unless you use Google Maps API and get another instance of the map
+ggmap(sg_map, darken = c("0.7")) +
+  geom_point(data = obs, aes(x = Longitude, y = Latitude, color = order), size = 1.8, alpha = 0.7) +
+  theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.margin = margin(0, 0, -1, -1, 'cm'),
+        legend.position = c(0.9, 0.25),
+        legend.title = element_text(colour = 'white', size = 10),
+        legend.text = element_text(colour = 'white', size = 7),
+        legend.background = element_rect(fill = 'black', size = 0))
+
+# Consider using your own google api key?
+ggmap::register_google(key = "")
+map <- get_map("singapore", maptype = "roadmap", zoom = 11, source = "google", color = "bw")
