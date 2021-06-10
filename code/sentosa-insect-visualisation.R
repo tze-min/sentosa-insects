@@ -36,7 +36,7 @@ species_count <-
 
 topn_species <-
   species_count %>%
-  top_n(15)
+  top_n(10)
 
 genus_count <-
   clean$genus %>%
@@ -52,7 +52,7 @@ ggplot(data = topn_species, aes(x = obs, y = reorder(species, obs))) +
   xlab("Occurrences") + ylab("Insect Species") +
   theme_minimal()
 
-# Download images and their sources if the names don't exist
+# Download images and their sources if they don't exist in our image directory
 download_species_image <- function(species_name, obs_data = clean, image_sources = "images/insects/image-sources.txt") {
   filename <- paste0("images/insects/", species_name, ".jpg")
   sink(image_sources, append = TRUE)
@@ -75,13 +75,13 @@ n <- length(topn_species$species)
 labels <- character(n)
 for (i in 1:n) {
   species_name <- as.character(topn_species$species[i])
-  labels[i] <- paste0("<img src='images/insects/", species_name, ".jpg' width='60' /><br>", species_name)
+  labels[i] <- paste0(species_name, " <img src='images/insects/", species_name, ".jpg' width='60' />")
 }
 names(labels) <- as.character(topn_species$species)
   
 ggplot(topn_species, aes(x = obs, y = reorder(species, obs))) +
-  geom_bar(position = "dodge", stat = "identity") + 
-  labs(title = "Top 15 Insect Species in Sentosa",
+  geom_bar(position = "dodge", stat = "identity", width = 0.6) + 
+  labs(title = "Top 10 Insect Species in Sentosa",
        subtitle = "Using iNaturalist data and observations from 2005 onwards") +
   xlab("Occurrences") + ylab("Insect Species") +
   scale_y_discrete(name = NULL, labels = labels) +
@@ -89,3 +89,4 @@ ggplot(topn_species, aes(x = obs, y = reorder(species, obs))) +
         panel.grid.major = element_line(color = "gray"),
         axis.text.y = element_markdown(lineheight = 1.2)) 
 
+#### Retrieve Taxonomic Information ####
