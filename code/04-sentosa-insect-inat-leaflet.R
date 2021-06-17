@@ -97,30 +97,39 @@ makemap_order_dark <- function(insectdata, radio = FALSE) {
   
   num_of_orders <- length(dfs_byorder)
   names_of_dfs <- names(dfs_byorder)
-  colors_per_df <- RColorBrewer::brewer.pal(num_of_orders, "Set1") # use a qualitative color palette
-
   ordermap <- basemap
   
-  for (i in seq(1:num_of_orders)) {
-    df <- dfs_byorder[i][[1]]
-    ordermap <- ordermap %>% 
-      addCircleMarkers(data = df,
-                       ~longitude, ~latitude,
-                       label = lapply(df$popup_text, htmltools::HTML),
-                       radius = 1.2, stroke = TRUE, fillOpacity = 1,
-                       color = colors_per_df[i],
-                       group = names_of_dfs[i])
-  }
-  
   if (radio == TRUE) {
+    
+    for (i in seq(1:num_of_orders)) {
+      df <- dfs_byorder[i][[1]]
+      ordermap <- ordermap %>% 
+        addCircleMarkers(data = df,
+                         ~longitude, ~latitude,
+                         label = lapply(df$popup_text, htmltools::HTML),
+                         radius = 1.2, stroke = TRUE, fillOpacity = 1,
+                         color = "red",
+                         group = names_of_dfs[i])
+    }
     ordermap <- ordermap %>%
       addLayersControl(
         baseGroups = names_of_dfs,
-        options = layersControlOptions(collapsed = FALSE)) %>%
-      addLegend("bottomright", 
-                colors = colors_per_df,
-                labels = names_of_dfs)
+        options = layersControlOptions(collapsed = FALSE))
+    
   } else {
+    
+    colors_per_df <- RColorBrewer::brewer.pal(num_of_orders, "Set1") # use a qualitative color palette
+    
+    for (i in seq(1:num_of_orders)) {
+      df <- dfs_byorder[i][[1]]
+      ordermap <- ordermap %>% 
+        addCircleMarkers(data = df,
+                         ~longitude, ~latitude,
+                         label = lapply(df$popup_text, htmltools::HTML),
+                         radius = 1.2, stroke = TRUE, fillOpacity = 1,
+                         color = colors_per_df[i],
+                         group = names_of_dfs[i])
+    }
     ordermap <- ordermap %>%
       addLayersControl(
         overlayGroups = names_of_dfs,
