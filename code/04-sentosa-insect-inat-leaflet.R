@@ -79,10 +79,58 @@ for (i in seq(1:num_of_orders)) {
 ordermap <- ordermap %>%
   addLayersControl(
     baseGroups = c("Light", "Dark", "Street", "Satellite"),
-    options = layersControlOptions(collapsed = FALSE),
-    overlayGroups = names_of_dfs) %>%
+    overlayGroups = names_of_dfs,
+    options = layersControlOptions(collapsed = FALSE)) %>%
   addLegend("bottomright", 
             colors = colors_per_df,
             labels = names_of_dfs)
 
 ordermap
+
+# ----------------------- Occurrences by Order: Dark Theme -----------------------
+
+makemap_order_dark <- function(insectdata, radio = FALSE) {
+  
+  basemap <- leaflet(insectdata) %>%
+    setView(lng = 103.8303, lat = 1.2494, zoom = 15) %>%
+    addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark")
+  
+  num_of_orders <- length(dfs_byorder)
+  names_of_dfs <- names(dfs_byorder)
+  colors_per_df <- RColorBrewer::brewer.pal(num_of_orders, "Set1") # use a qualitative color palette
+
+  ordermap <- basemap
+  
+  for (i in seq(1:num_of_orders)) {
+    df <- dfs_byorder[i][[1]]
+    ordermap <- ordermap %>% 
+      addCircleMarkers(data = df,
+                       ~longitude, ~latitude,
+                       label = lapply(df$popup_text, htmltools::HTML),
+                       radius = 1.2, stroke = TRUE, fillOpacity = 1,
+                       color = colors_per_df[i],
+                       group = names_of_dfs[i])
+  }
+  
+  if (radio == TRUE) {
+    ordermap <- ordermap %>%
+      addLayersControl(
+        baseGroups = names_of_dfs,
+        options = layersControlOptions(collapsed = FALSE)) %>%
+      addLegend("bottomright", 
+                colors = colors_per_df,
+                labels = names_of_dfs)
+  } else {
+    ordermap <- ordermap %>%
+      addLayersControl(
+        overlayGroups = names_of_dfs,
+        options = layersControlOptions(collapsed = FALSE)) %>%
+      addLegend("bottomright", 
+                colors = colors_per_df,
+                labels = names_of_dfs)
+  }
+  
+  ordermap
+}
+
+makemap_order_dark(full, radio = TRUE)
