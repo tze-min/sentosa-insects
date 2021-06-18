@@ -235,8 +235,102 @@ leaflet(full) %>%
 ggmap::register_google(key = "")
 map <- get_map("singapore", maptype = "roadmap", zoom = 11, source = "google", color = "bw")
 
-# ----------------------- Other Visualisations ----------------------- 
+# ----------------------- Top Contributors ----------------------- 
 
-# How records in Sentosa have changed over the years 
-dates <- data.frame(table(clean$observed_on)) %>% rename("date" = "Var1", "freq" = "Freq")
-ggplot(data = dates, aes(x = date, y = freq, group = 1)) + geom_line() + geom_point()
+users <- clean %>%
+  select(user_id, user_login) %>%
+  st_drop_geometry() %>%
+  unique()
+
+# Examine top contributors and their record count, i.e. anyone with no. of submissions > 1
+top_contributors <- 
+  table(clean$user_id) %>% 
+  sort(decreasing = TRUE) %>% 
+  as.data.frame() %>%
+  dplyr::rename("user_id" = 1, "num_contributions" = 2) %>% 
+  dplyr::filter(num_contributions > 1) %>%
+  merge(y = users, by = "user_id", all.x = TRUE)
+
+nrow(top_contributors)
+
+ggplot(data = top_contributors, aes(x = num_contributions, y = reorder(user_login, num_contributions))) +
+  geom_bar(position = "dodge", stat = "identity") +
+  labs(title = "Contribution Count of Top iNaturalist Users in Sentosa",
+       subtitle = "Using Insecta data and observations from 2005 onwards") +
+  xlab("Number of Records Submitted") + ylab("Contributor") +
+  geom_text(aes(label = num_contributions), hjust = -0.5) +
+  xlim(0, 450) +
+  theme_minimal()
+
+top_contributions <- top_contributors %>%
+  merge(y = clean, by = "user_id", all.x = TRUE) %>%
+  dplyr::group_by(user_id) 
+
+# Break down the species within each person's contributions
+top_contributions_by_species <-
+  top_contributions %>%
+  dplyr::count(scientific_name_simple) %>%
+  merge(y = users, by = "user_id", all.x = TRUE) %>%
+  dplyr::rename("species" = "scientific_name_simple", "num_contributions" = "n")
+
+ggplot(data = top_contributions_by_species, aes(fill = species, x = num_contributions, y = reorder(user_login, num_contributions))) +
+  geom_bar(position = "stack", stat = "identity") +
+  labs(title = "Contribution Count of Top iNaturalist Users in Sentosa, by Species",
+       subtitle = "Using Insecta data and observations from 2005 onwards") +
+  xlab("Number of Records Submitted") + ylab("Contributor") +
+  viridis::scale_fill_viridis(discrete = T) +
+  xlim(0, 450) +
+  theme(legend.position = "none") 
+
+# Break down the years of each person's contributions
+top_contributions_by_year <- 
+  top_contributions %>%
+  mutate(year = as.factor(format(as.Date(observed_on), format = "%Y"))) %>%
+  mutate(month = as.factor(format(as.Date(observed_on), format = "%m"))) %>%
+  count(year) %>%
+  merge(y = users, by = "user_id", all.x = TRUE) %>%
+  rename("num_contributions" = "n")
+
+levels(top_contributions_by_year$year) <- 
+  levels(top_contributions_by_year$year)[order(as.numeric(levels(top_contributions_by_year$year)))]
+
+ggplot(data = top_contributions_by_year, aes(fill = year, x = num_contributions, y = reorder(user_login, num_contributions, sum))) +
+  geom_bar(position = "stack", stat = "identity") +
+  labs(title = "Contribution Count of Top iNaturalist Users in Sentosa, by Year",
+       subtitle = "Using Insecta data and observations from 2005 onwards") +
+  xlab("Number of Records Submitted") + ylab("Contributor") +
+  viridis::scale_fill_viridis(discrete = TRUE, direction = -1) +
+  xlim(0, 450)
+
+# And without the highest contributor?
+contributions_by_year <-
+  top_contributions_by_year %>%
+  filter(user_login != "big-simonchan")
+
+ggplot(data = contributions_by_year, aes(fill = year, x = num_contributions, y = reorder(user_login, num_contributions, sum))) +
+  geom_bar(position = "stack", stat = "identity") +
+  labs(title = "Contribution Count of Top iNaturalist Users in Sentosa, by Year",
+       subtitle = "Using Insecta data and observations from 2005 onwards (without big-simonchan)") +
+  xlab("Number of Records Submitted") + ylab("Contributor") +
+  viridis::scale_fill_viridis(discrete = TRUE, direction = -1) +
+  xlim(0, 50)
+
+
+# ----------------------- Contributors by Year and Month ----------------------- 
+
+clean <- 
+  clean %>%
+  mutate(year = as.factor(format(as.Date(observed_on), format = "%Y"))) %>%
+  mutate(month = as.factor(format(as.Date(observed_on), format = "%m")))
+
+contributions_yearly <- 
+  clean %>%
+  group_by(year) %>%
+  st_drop_geometry() %>%
+  count(year)
+
+contributions_monthly <-
+  clean %>%
+  group_by(month) %>%
+  st_drop_geometry() %>%
+  count(month)
