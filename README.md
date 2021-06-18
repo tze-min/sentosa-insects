@@ -1,5 +1,8 @@
 # sentosa-insects
 
+### Code Overview
+Each R script runs start.R at the beginning, which loads oft-used libraries and sets the working directory paths.
+
 ### Data/Image Sources
 
 - DIVA-GIS https://www.diva-gis.org/gdata
