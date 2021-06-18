@@ -1,4 +1,9 @@
 # Visualises the data cleaned from 02.
+# - Top N occurring species
+# - Auto-download image and sources
+# - Extract taxonomic data from online databases
+# - Visualise based on taxonomic info
+# - Map with package "ltaer"
 
 source("start.R")
 
@@ -19,6 +24,9 @@ clean <-
   separate(scientific_name, c("genus", "species", "subspecies"), remove = FALSE) %>%
   unite(genus, species, col = "scientific_name_simple", sep = " ", remove = FALSE) 
   
+clean$latitude <- as.numeric(clean$latitude)
+clean$longitude <- as.numeric(clean$longitude)
+
 # Top n insect species in Sentosa
 species_count <- 
   clean$scientific_name_simple %>%
@@ -70,7 +78,7 @@ download_species_image <- function(species_name,
   sink()
 }
 
-desired_species <- topn_species$speciess
+desired_species <- topn_species$species
 unique_species <- unique(clean$scientific_name_simple)
 lapply(desired_species, download_species_image)
 
@@ -79,19 +87,19 @@ n <- length(topn_species$species)
 labels <- character(n)
 for (i in 1:n) {
   species_name <- as.character(topn_species$species[i])
-  labels[i] <- paste0(species_name, " <img src='images/insects/", species_name, ".jpg' width='60' />")
+  labels[i] <- paste0("<img src='images/insects/", species_name, ".jpg' width='60'/><br><em>", species_name, "</em>")
 }
 names(labels) <- as.character(topn_species$species)
-  
-ggplot(topn_species, aes(x = obs, y = reorder(species, obs))) +
-  geom_bar(position = "dodge", stat = "identity", width = 0.6) + 
+
+ggplot(topn_species, aes(x = reorder(species, obs), y = obs)) +
+  geom_col(position = "dodge", width = 0.6) + 
   labs(title = "Top 10 Insect Species in Sentosa",
        subtitle = "Using iNaturalist data and observations from 2005 onwards") +
-  xlab("Occurrences") + ylab("Insect Species") +
-  scale_y_discrete(name = NULL, labels = labels) +
+  ylab("Occurrences") + xlab("Insect Species") +
+  scale_x_discrete(name = NULL, labels = labels) +
   theme(panel.background = element_rect(fill = "white", color = "white"),
         panel.grid.major = element_line(color = "gray"),
-        axis.text.y = element_markdown(lineheight = 1.2)) 
+        axis.text.x = element_markdown(lineheight = 1.2)) 
 
 # ----------------------- Retrieve Taxonomic Information from NCBI -----------------------
 
@@ -133,8 +141,8 @@ taxo_breakdown <-
   summarise(n = n()) %>% 
   as.data.frame()
 
-ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = family)) +
-  geom_col(position = position_dodge2(width = .9), fill = "black") +
+ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = reorder(family, -n))) +
+  geom_col(position = position_dodge2(width = .9)) +
   labs(title = "Breakdown of Orders and Families of Insect Species in Sentosa",
        subtitle = "Using iNaturalist data and observations from 2005 onwards") +
   xlab("Order") + 
@@ -148,12 +156,12 @@ ggplot(taxo_breakdown, aes(x = reorder(order, -n), y = n, fill = family)) +
         panel.grid.major.y = element_line(color = "gray")) +
   ylim(0, 32) 
 
-# ----------------------- Heatmaps? Maps? Just bad vectors? ----------------------- 
+# ----------------------- Map with Ltaer ----------------------- 
 
 #remote::install_github("shaunkhoo/ltaer") 
 
-clean <- clean %>% rename("Longitude" = "longitude", "Latitude" = "latitude") # naming required by ltaer's functions
 full <- merge(clean, taxo_data, by.x = "scientific_name_simple", by.y = "species", all.x = TRUE)
+full <- full %>% rename("Longitude" = "longitude", "Latitude" = "latitude") # naming required by ltaer's functions
 
 lepidoptera <- full %>% filter(order == "Lepidoptera")
 ltaer::exploreSGMap(lepidoptera, colour = "red", size = 1.8, alpha = 0.5, popup = "scientific_name_simple") 
@@ -173,7 +181,57 @@ ggmap(sg_map, darken = c("0.7")) +
         legend.text = element_text(colour = 'white', size = 7),
         legend.background = element_rect(fill = 'black', size = 0))
 
-# Consider using your own google api key?
+# ----------------------- Exploring Mapping with Leaflet ----------------------- 
+
+library("leaflet")
+library("htmlwidgets")
+
+full <- merge(clean, taxo_data, by.x = "scientific_name_simple", by.y = "species", all.x = TRUE)
+
+full <- full %>%
+  mutate(popup_text = paste("<i>", scientific_name_simple, "</i><br/>",
+                            observed_on, "<br/>",
+                            "by:", user_login))
+
+table(full$order)
+lepidoptera <- full %>% filter(order == "Lepidoptera")
+odonata <- full %>% filter(order == "Odonata")
+hemiptera <- full %>% filter(order == "Hemiptera")
+hymenoptera <- full %>% filter(order == "Hymenoptera")
+coleoptera <- full %>% filter(order == "Coleoptera")
+orthoptera <- full %>% filter(order == "Orthoptera")
+
+insectorder <- colorFactor(c("#fb3640", "#1d3461", "#758bfd", "#c5d86d", "#c04cfd", "#1b998b", "#ff6700"),
+                           domain = unique(full$order))
+
+leaflet(full) %>%
+  
+  # base groups
+  setView(lng = 103.8303, lat = 1.2494, zoom = 15) %>%
+  addTiles(group = "Street View") %>%
+  addProviderTiles(providers$CartoDB.Positron, group = "CartoDB") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+  
+  # overlay groups
+  addCircleMarkers(data = lepidoptera, ~longitude, ~latitude, 
+                   clusterOptions = markerClusterOptions(),
+                   popup = ~popup_text, radius = 2, stroke = T, fillOpacity = 1, color = "#fb3640", group = "Lepidoptera") %>%
+  addCircleMarkers(data = odonata, ~longitude, ~latitude, 
+                   clusterOptions = markerClusterOptions(),
+                   popup = ~popup_text, radius = 2, stroke = T, fillOpacity = 1, color = "#1d3461", group = "Odonata") %>%
+  addCircleMarkers(data = hemiptera, ~longitude, ~latitude,
+                   popup = ~popup_text, radius = 2, stroke = T, fillOpacity = 1, color = "#758bfd", group = "Hemiptera") %>%
+  addCircleMarkers(data = hymenoptera, ~longitude, ~latitude,
+                   popup = ~popup_text, radius = 2, stroke = T, fillOpacity = 1, color = "#1b998b", group = "Hymenoptera") %>%
+  
+  # layers control
+  addLayersControl(
+    baseGroups = c("Light", "Street View", "Satellite"),
+    overlayGroups = c("Lepidoptera", "Odonata", "Hemiptera", "Hymenoptera"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+# Consider using your own google api key
 ggmap::register_google(key = "")
 map <- get_map("singapore", maptype = "roadmap", zoom = 11, source = "google", color = "bw")
 
