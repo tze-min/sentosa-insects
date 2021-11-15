@@ -1,4 +1,7 @@
-# Visualises the data cleaned from 02.
+
+### 03 Sentosa Insects - iNaturalist Data Visualisation
+
+# This script visualises the data cleaned from 02.
 # - Top N occurring species
 # - Auto-download image and sources
 # - Extract taxonomic data from online databases
@@ -245,10 +248,10 @@ users <- clean %>%
 # Examine top contributors and their record count, i.e. anyone with no. of submissions > 1
 top_contributors <- 
   table(clean$user_id) %>% 
-  sort(decreasing = TRUE) %>% 
+  sort(decreasing = TRUE) #%>% 
   as.data.frame() %>%
   dplyr::rename("user_id" = 1, "num_contributions" = 2) %>% 
-  dplyr::filter(num_contributions > 1) %>%
+  dplyr::filter(num_contributions > 1) #%>%
   merge(y = users, by = "user_id", all.x = TRUE)
 
 nrow(top_contributors)
@@ -312,9 +315,20 @@ ggplot(data = contributions_by_year, aes(fill = year, x = num_contributions, y =
   labs(title = "Contribution Count of Top iNaturalist Users in Sentosa, by Year",
        subtitle = "Using Insecta data and observations from 2005 onwards (without big-simonchan)") +
   xlab("Number of Records Submitted") + ylab("Contributor") +
-  viridis::scale_fill_viridis(discrete = TRUE, direction = -1) +
+  viridis::scale_fill_viridis(discrete = TRUE) +
   xlim(0, 50)
 
+# What about the one time users?
+onetime_contributors <-
+  table(clean$user_id) %>%
+  as.data.frame() %>%
+  dplyr::rename("user_id" = 1, "num_contributions" = 2) %>% 
+  dplyr::filter(num_contributions == 1) %>%
+  merge(y = users, by = "user_id", all.x = TRUE)
+
+onetime_contributions <- onetime_contributors %>%
+  merge(y = clean, by = "user_id", all.x = TRUE) %>%
+  dplyr::group_by(user_id) 
 
 # ----------------------- Contributors by Year and Month ----------------------- 
 

@@ -1,5 +1,8 @@
-# Explores the occurrence data of Insecta class in Singapore, downloaded from iNaturalist.
-# Specifically looking at those within Sentosa.
+
+### 01 Sentosa Insects - iNaturalist Data Exploration
+
+# This script explores the occurrence data of Insecta class in Singapore, downloaded from iNaturalist,
+# specifically looking at those within Sentosa.
 
 source("start.R")
 
@@ -88,7 +91,7 @@ ggplot() +
 # Try raster library
 data_tif <- raster::raster(paste0(wd$raw, "gawyeerichards_sgmap.tif"), RAT = TRUE)
 data_rgb <- raster::brick(paste0(wd$raw, "gawyeerichards_sgmap.tif"))
-data_dbf <- foreign::read.dbf(paste0(wd$raw, "gawyeerichards_sgmap.tif.vat.dbf") # read the dbf in as a data frame
+data_dbf <- foreign::read.dbf(paste0(wd$raw, "gawyeerichards_sgmap.tif.vat.dbf")) # read the dbf in as a data frame
                               
 plot(data_tif)
 raster::plotRGB(data_rgb)
@@ -99,4 +102,5 @@ terra::sources(sg)
 terra::hasValues(sg)
 plot(sg)
 
+# Remove unnecessary objects
 rm(clean_non_sentosa_sf, clean_sentosa_sf, clean_sentosa_obs_sf, non_sentosa_intersection, non_sentosa_sf, non_sentosa_sp, sentosa_intersection)

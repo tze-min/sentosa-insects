@@ -1,4 +1,7 @@
-# Cleans occurrence data from iNaturalist for Sentosa's insects, based on what was explored in file 01.
+
+### 02 Sentosa Insects - iNaturalist Data Cleaning
+
+# This script cleans occurrence data from iNaturalist for Sentosa's insects, based on what was explored in file 01.
 
 source("start.R")
 

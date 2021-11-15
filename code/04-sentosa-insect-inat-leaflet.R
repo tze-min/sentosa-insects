@@ -1,5 +1,13 @@
-# Visualises the data cleaned from 02 and combined with data from 03.
-# Focuses on experimenting with the package "leaflet"
+
+### 04 Sentosa Insects - iNaturalist Data Visualisation with Leaflet
+
+# This script visualises the data cleaned from 02 and combined with data from 03.
+# It focuses on experimenting with the package "leaflet", which can create maps as HTML files,
+# with limited interactivity.
+
+# After "Initialisation", which initialises the occurrence data (the code is based on 02 and 03 scripts) 
+# the remaining sections each creates a type of map, as per the section header title. The scripts written
+# here eventually contributed to the development of the Occurrence Mapper web app.
 
 source("start.R")
 
@@ -28,6 +36,8 @@ initialise_script04 <- function() {
   full <- merge(clean, taxo_data, by.x = "scientific_name_simple", by.y = "species", all.x = TRUE)
   return(full)
 }
+
+write.csv(initialise_script04(), "clean-sentosa-observations-155147_formatted.csv", row.names = FALSE)
 
 # ----------------------- Occurrences by Order: Trial -----------------------
 
@@ -253,10 +263,12 @@ makemap_order <- function(data, order_radio = TRUE, cluster = FALSE, theme = "Sa
                 labels = names_of_dfs) %>%
       hideGroup(names_of_dfs[2:num_of_orders])
   }
-  ordermap
+  
+  saveWidget(ordermap, file = file.path(wd$map, "orders_cluster_voyager.html"), title = "Records by Order")
 }
 
-makemap_order(data = full, order_radio = TRUE, cluster = TRUE, theme = "Street")
+library("htmltools")
+makemap_order(data = full, order_radio = TRUE, cluster = TRUE, theme = "Voyager")
 
 
 # ----------------------- Occurrences by Order: Same as above, except - Checkbox the Basemap Themes -----------------------
@@ -368,8 +380,9 @@ makemap_order(data = full, order_radio = TRUE, cluster = FALSE)
 
 full <- initialise_script04() %>% 
   mutate(popup_text = paste("<i>", scientific_name_simple, "</i><br/>",
-                            observed_on, "<br/>",
-                            "by", user_login))
+                            observed_on, "<br/>", 
+                            "by", user_login, "<br/>",
+                            id))
 
 makemap_species <- function(data, speciesname, cluster = FALSE) {
   # species must be only genus + species, no subspecies taken into account
@@ -385,8 +398,8 @@ makemap_species <- function(data, speciesname, cluster = FALSE) {
     setView(lng = 103.8303, lat = 1.2494, zoom = 15) %>%
     addTiles(group = "Street") %>%
     addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
-    addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark") %>%
-    addProviderTiles(providers$CartoDB.Positron, group = "Light") %>%
+    #addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark") %>%
+    #addProviderTiles(providers$CartoDB.Positron, group = "Light") %>%
     addProviderTiles(providers$CartoDB.Voyager, group = "Voyager")
   
   if (cluster == TRUE) {
@@ -408,12 +421,73 @@ makemap_species <- function(data, speciesname, cluster = FALSE) {
 
     }
 
-     map %>%
+    m <- map %>%
        addControl(maptitle, position = "bottomleft") %>%
        addLayersControl(
-         baseGroups = c("Voyager", "Street", "Satellite", "Light", "Dark"),
+         baseGroups = c("Voyager", "Street", "Satellite"),
          options = layersControlOptions(collapsed = FALSE))
-  
+    
+    saveWidget(m, file = file.path(wd$map, paste0(speciesname, "_cluster.html")), title = paste(speciesname, "Records"))
 }
 
-makemap_species(data = full, speciesname = "Elymnias hypermnestra", cluster = FALSE)
+library("htmlwidgets")
+
+scinames <- c(unique(full$scientific_name_simple))
+
+for (i in unique(full$scientific_name_simple)) {
+  makemap_species(data = full, speciesname = i, cluster = TRUE)
+}
+
+
+
+
+for (i in unique(full$scientific_name_simple)) {
+  makemap_species_nocluster(data = full, speciesname = i, cluster = FALSE)
+}
+
+
+makemap_species_nocluster <- function(data, speciesname, cluster = FALSE) {
+  # species must be only genus + species, no subspecies taken into account
+  
+  df <- data %>% filter(scientific_name_simple == speciesname)
+  count <- nrow(df)
+  
+  maptitle <- tagList(
+    tags$h1(tags$b(speciesname), tags$style("h1 {display: inline; color: black; font-size: 15px; font-style: italic; text-align: center;}")),
+    tags$p(tags$b(paste0("(", count, ")")), tags$style("p {display: inline; color: black; font-size: 14px; text-align: center;}")))
+  
+  map <- leaflet(df) %>% 
+    setView(lng = 103.8303, lat = 1.2494, zoom = 15) %>%
+    addTiles(group = "Street") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+    #addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark") %>%
+    #addProviderTiles(providers$CartoDB.Positron, group = "Light") %>%
+    addProviderTiles(providers$CartoDB.Voyager, group = "Voyager")
+  
+  if (cluster == TRUE) {
+    map <- map %>%
+      addCircleMarkers(data = df,
+                       ~longitude, ~latitude,
+                       label = lapply(df$popup_text, htmltools::HTML),
+                       radius = 1.2, stroke = TRUE, opacity = 1, fillOpacity = 1,
+                       color = "red",
+                       clusterOptions = markerClusterOptions()) # the only difference between this and else cluster option
+    
+  } else {
+    map <- map %>%
+      addCircleMarkers(data = df,
+                       ~longitude, ~latitude,
+                       label = lapply(df$popup_text, htmltools::HTML),
+                       radius = 1.2, stroke = TRUE, opacity = 1, fillOpacity = 1,
+                       color = "red")
+    
+  }
+  
+  m <- map %>%
+    addControl(maptitle, position = "bottomleft") %>%
+    addLayersControl(
+      baseGroups = c("Voyager", "Street", "Satellite"),
+      options = layersControlOptions(collapsed = FALSE))
+  
+  saveWidget(m, file = file.path(wd$map, paste0(speciesname, ".html")), title = paste(speciesname, "Records"))
+}
