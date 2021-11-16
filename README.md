@@ -20,6 +20,7 @@ sentosa-insects
 │       03-sentosa-insect-inat-visualisation.R
 │       04-sentosa-insect-inat-leaflet.R
 │       05-bees-leaflet.R
+|	functions.R
 │
 ├───data
 │       processed.zip
@@ -60,6 +61,7 @@ sentosa-insects
 3. The R scripts in the `code` folder contains the progression of my data clean up and visualisation, sequentially from file `01` to `05`. If you would like to run them, consider doing so segment by segment and going through the comments in each file. 
 
 	- Each of these R scripts has `source("start.R")` as their first line, where running it loads the packages and file paths needed for the project from `start.R`.
+	- `functions.R` are generalised functions to create Leaflet maps by order and species, and can be run independently of the other scripts.
 
 4. Please ensure the working directories are accurate with respect to your device as you're running the code. E.g. `data` isn't nestled within a subfolder `data` after you've unzipped it.
 
