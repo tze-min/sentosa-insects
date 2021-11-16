@@ -23,8 +23,8 @@ library("sf")
 
 wd <- list()
 wd$root <- getwd()
-wd$code <- file.path(getwd(), "code")"C:/Users/TzeMin/Documents/sentosa-insects/code/"
-wd$raw <- file.path(getwd(), "data", "raw") "C:/Users/TzeMin/Documents/sentosa-insects/data/raw/"
-wd$proc <- file.path(getwd(), "data", "processed")"C:/Users/TzeMin/Documents/sentosa-insects/data/processed/"
-wd$img <- file.path(getwd(), "images") "C:/Users/TzeMin/Documents/sentosa-insects/images/"
-wd$map <- file.path(getwd(), "maps") "C:/Users/TzeMin/Documents/sentosa-insects/maps"
+wd$code <- file.path(getwd(), "code")
+wd$raw <- file.path(getwd(), "data", "raw")
+wd$proc <- file.path(getwd(), "data", "processed")
+wd$img <- file.path(getwd(), "images")
+wd$map <- file.path(getwd(), "maps")

@@ -16,10 +16,10 @@ source("start.R")
 initialise_script04 <- function() {
   
   # Imports
-  obs <- read_csv(paste0(wd$proc, "clean-sentosa-observations-155147.csv"))
+  obs <- read_csv(file.path(wd$proc, "clean-sentosa-observations-155147.csv"))
   obs_sf <- st_as_sf(obs, coords = c("longitude", "latitude"), remove = FALSE, crs = 4326)
   
-  singapore_map_sp <- readOGR(paste0(wd$raw, "divagis_SGP_adm0-refactored.shp"))
+  singapore_map_sp <- readOGR(file.path(wd$raw, "divagis_SGP_adm0-refactored.shp"))
   sentosa_map_sp <- singapore_map_sp[singapore_map_sp$location == "Sentosa", ]
   sentosa_map_sf <- st_as_sf(sentosa_map_sp, crs = 4326)
   
@@ -32,7 +32,7 @@ initialise_script04 <- function() {
   clean$latitude <- as.numeric(clean$latitude)
   clean$longitude <- as.numeric(clean$longitude)
   
-  taxo_data <- read_csv(paste0(wd$proc, "insects-taxdata-full.csv"))
+  taxo_data <- read_csv(file.path(wd$proc, "insects-taxdata-full.csv"))
   full <- merge(clean, taxo_data, by.x = "scientific_name_simple", by.y = "species", all.x = TRUE)
   return(full)
 }
@@ -268,6 +268,8 @@ makemap_order <- function(data, order_radio = TRUE, cluster = FALSE, theme = "Sa
 }
 
 library("htmltools")
+library("htmlwidgets")
+
 makemap_order(data = full, order_radio = TRUE, cluster = TRUE, theme = "Voyager")
 
 
