@@ -2,6 +2,8 @@
 
 This is a repository of R scripts and datasets used to explore, clean and visualise insect occurrence records, particularly those found in Sentosa, Singapore. It was created as part of a project to understand the potential of using citizen science data to map the distribution of species within the island.
 
+Created for the Ecological Adaptations Lab at Yale-NUS College in 2021.
+
 ## SECTION 1. Project Structure
 
 The folders and its contents are structured as follows. 
