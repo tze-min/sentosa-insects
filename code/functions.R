@@ -4,6 +4,7 @@
 # This script contains a list of functions that I've extracted from the other R files in the code folder and 
 # generalised to suit the format of any dataset. 
 
+
 # ----------------------- Make Leaflet Map by Order ----------------------- 
 
 makemap_order <- function(data, order_radio = TRUE, cluster = FALSE, theme = "Satellite") {
@@ -131,3 +132,84 @@ full <- initialise_script04() %>%
 
 # Make map!
 makemap_order(data = full, order_radio = TRUE, cluster = FALSE, theme = "Voyager")
+
+
+# ----------------------- Make Leaflet Map by Species -----------------------
+
+makemap_species <- function(data, speciesname, cluster = FALSE) {
+  # This is a function to create a HTML Leaflet map that plots the points from your given occurrence dataset, 
+  # broken down by the species (taxonomy) present in the data.
+  #
+  # Parameters
+  #   data :        Your occurrence dataset ought to have at least the 6 columns:
+  #                     scientific_name, date_observed, observer_name, longitude, latitude
+  #                 Although, scientific_name, date_observed, and observer_name can be NA values as they are 
+  #                 used to create the textboxes that pop up when you hover over a point in the map.
+  #   speciesname : Species name you want to make a map for. It is genus + species, no subspecies.
+  #   cluster :     If TRUE, the plotted points will be clustered when close together (default = FALSE).
+
+  library("dplyr")
+  library("htmltools")
+  library("htmlwidgets")
+  
+  data <- data %>% mutate(popup_text  = paste("<i>", scientific_name, "</i><br/>",
+                                              date_observed, "<br/>",
+                                              "by", observer_name))
+  
+  df <- data %>% filter(scientific_name == speciesname)
+  
+  count <- nrow(df)
+  
+  maptitle <- tagList(
+    tags$h1(tags$b(speciesname), tags$style("h1 {display: inline; color: black; font-size: 15px; font-style: italic; text-align: center;}")),
+    tags$p(tags$b(paste0("(", count, ")")), tags$style("p {display: inline; color: black; font-size: 14px; text-align: center;}")))
+  
+  map <- leaflet(df) %>% 
+    setView(lng = 103.8303, lat = 1.2494, zoom = 15) %>%
+    addTiles(group = "Street") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+    #addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark") %>%
+    #addProviderTiles(providers$CartoDB.Positron, group = "Light") %>%
+    addProviderTiles(providers$CartoDB.Voyager, group = "Voyager")
+  
+  if (cluster == TRUE) {
+    map <- map %>%
+      addCircleMarkers(data = df,
+                       ~longitude, ~latitude,
+                       label = lapply(df$popup_text, htmltools::HTML),
+                       radius = 1.2, stroke = TRUE, opacity = 1, fillOpacity = 1,
+                       color = "red",
+                       clusterOptions = markerClusterOptions()) # the only difference between this and else cluster option
+    
+  } else {
+    map <- map %>%
+      addCircleMarkers(data = df,
+                       ~longitude, ~latitude,
+                       label = lapply(df$popup_text, htmltools::HTML),
+                       radius = 1.2, stroke = TRUE, opacity = 1, fillOpacity = 1,
+                       color = "red")
+    
+  }
+  
+  m <- map %>%
+    addControl(maptitle, position = "bottomleft") %>%
+    addLayersControl(
+      baseGroups = c("Voyager", "Street", "Satellite"),
+      options = layersControlOptions(collapsed = FALSE))
+  
+  saveWidget(m, file = file.path(wd$map, paste0(speciesname, "_cluster.html")), title = paste(speciesname, "Records"))
+}
+
+# Prepare your dataset and make sure the column names align with what's required
+full <- initialise_script04() %>%
+  dplyr::select(scientific_name_simple, observed_on, user_login, order, longitude, latitude) %>%
+  dplyr::rename(scientific_name = scientific_name_simple) %>%
+  dplyr::rename(date_observed = observed_on) %>%
+  dplyr::rename(observer_name = user_login)  
+
+# Loop through the species names in your data and make map!
+scinames <- c(unique(full$scientific_name_simple))
+
+for (i in unique(full$scientific_name_simple)) {
+  makemap_species(data = full, speciesname = i, cluster = TRUE)
+}
