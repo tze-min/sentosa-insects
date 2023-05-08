@@ -16,6 +16,7 @@ library("ggmap")
 # interactive map
 library("htmltools")
 library("leaflet")
+library("htmlwidgets")
 
 # rasters / vector management
 library("rgdal")
